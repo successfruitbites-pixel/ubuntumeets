@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import fetch from "node-fetch";
@@ -23,18 +24,32 @@ async function startServer() {
           Authorization: `Bearer ${DAILY_API_KEY}`,
         },
         body: JSON.stringify({
+          privacy: "public",
           properties: {
-            enable_chat: true,
-            enable_screenshare: true,
-            enable_recording: "local",
-            exp: Math.floor(Date.now() / 1000) + 86400, // Expires in 24 hours
-          },
+            exp: Math.floor(Date.now() / 1000) + 86400 // Expires in 24 hours
+          }
         }),
       });
 
-      const room = await response.json() as any;
-      if (room.error) {
-        return res.status(500).json({ error: room.error });
+      const responseText = await response.text();
+      let room;
+      try {
+        room = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse Daily API response:", responseText);
+        return res.status(500).json({ error: "Invalid response from Daily API", info: responseText });
+      }
+      
+      if (!response.ok || room.error) {
+        console.error("Daily API Error Details:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: room
+        });
+        return res.status(500).json({ 
+          error: room.error || "invalid-request-error",
+          info: room.info || "Check your Daily.co API key and room properties."
+        });
       }
 
       res.json(room);

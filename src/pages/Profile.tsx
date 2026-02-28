@@ -20,13 +20,30 @@ export function Profile() {
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
-      setProfile(data);
-      setDisplayName(data?.display_name || "");
+      
+      if (error) {
+        console.error("Profile fetch error:", error);
+        setProfile({
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          created_at: new Date().toISOString()
+        });
+        setDisplayName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
+      } else {
+        setProfile(data || {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          created_at: new Date().toISOString()
+        });
+        setDisplayName(data?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User');
+      }
     } else {
       navigate("/signin");
     }

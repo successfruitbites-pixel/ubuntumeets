@@ -20,12 +20,28 @@ export function Dashboard() {
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .single();
-      setProfile(data);
+      
+      if (error) {
+        console.error("Profile fetch error:", error);
+        // Fallback if the profiles table doesn't exist yet or trigger failed
+        setProfile({
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          _dbError: true
+        });
+      } else {
+        setProfile(data || {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        });
+      }
     } else {
       navigate("/signin");
     }
@@ -34,13 +50,18 @@ export function Dashboard() {
   const fetchMeetings = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("meetings")
         .select("*")
         .eq("host_id", user.id)
         .order("started_at", { ascending: false })
         .limit(5);
-      if (data) setMeetings(data);
+      
+      if (error) {
+        console.error("Meetings fetch error:", error);
+      } else if (data) {
+        setMeetings(data);
+      }
     }
   };
 
@@ -53,7 +74,9 @@ export function Dashboard() {
       });
       const room = await response.json();
 
-      if (room.error) throw new Error(room.error);
+      if (room.error) {
+        throw new Error(`${room.error}: ${room.info || 'Unknown error'}`);
+      }
 
       // Save to Supabase
       const { data: { user } } = await supabase.auth.getUser();
@@ -100,6 +123,11 @@ export function Dashboard() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">Welcome back, {profile.display_name || profile.full_name}!</h1>
         <p className="text-gray-400 mt-2">Ready to connect with your team?</p>
+        {profile._dbError && (
+          <div className="mt-4 bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 text-sm rounded-md p-4">
+            <strong>Warning:</strong> It looks like the database tables haven't been created yet. Please run the SQL commands from the <code>supabase.sql</code> file in your Supabase SQL Editor to enable full functionality (like saving meetings and profile updates).
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">

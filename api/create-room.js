@@ -2,7 +2,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
   try {
     const response = await fetch('https://api.daily.co/v1/rooms', {
       method: 'POST',
@@ -20,29 +19,12 @@ export default async function handler(req, res) {
         }
       })
     });
-
     const data = await response.json();
-
     if (!response.ok) {
       return res.status(response.status).json({ error: data });
     }
-
     return res.status(200).json(data);
-
   } catch (error) {
     return res.status(500).json({ error: 'Failed to create room' });
   }
 }
-```
-
----
-
-## How to Add This File on GitHub
-
-**Step 1** — Go to your UbuntuMeet repository on github.com
-
-**Step 2** — Click **"Add file"** → **"Create new file"**
-
-**Step 3** — In the filename box at the top, type exactly:
-```
-api/create-room.js

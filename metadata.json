@@ -1,0 +1,5 @@
+{
+  "name": "UbuntuMeet",
+  "description": "A privacy-focused video conferencing platform designed for African freelancers, micro businesses, and professionals.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"]
+}
